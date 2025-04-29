@@ -144,6 +144,7 @@ while cap.isOpened():
 
         h, w, _ = frame.shape
 
+        # processing blinks - one count per full blink
         if eyes_ratio > 4.5:
             if BLINK_PROCESSED == False:
                 TOTAL_BLINKS += 1
@@ -155,6 +156,7 @@ while cap.isOpened():
                 TOTAL_BLINKS += 1
                 COUNTER = 0
 
+        # show all feature quantities on the frame
         cv2.rectangle(frame, (20, 100), (500, 420), (0,0,0), -1)
         cv2.putText(frame, f'Total Blinks: {TOTAL_BLINKS}',(30, 150), FONT, 1, (0, 255, 0), 3)
         cv2.putText(frame, f'Mouth Ratio: {mouth_ratio[0]}x, {mouth_ratio[1]}y', (30,200), FONT, 1, (0,255,0), 3)   
@@ -163,7 +165,7 @@ while cap.isOpened():
         cv2.putText(frame, f'Face Center Variance: {face_center_variance}', (30,350), FONT, 1, (0,255,0), 3)   
         cv2.putText(frame, f'Face Angle Variance: {face_angle_variance}', (30,400), FONT, 1, (0,255,0), 3)   
 
-
+        # display feature points on the frame 
         for idx in MOUTH:
             x = int(results.multi_face_landmarks[0].landmark[idx].x * w)
             y = int(results.multi_face_landmarks[0].landmark[idx].y * h)
@@ -177,6 +179,7 @@ while cap.isOpened():
     cv2.imshow("Iris Detection", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+
 
 
 cap.release()

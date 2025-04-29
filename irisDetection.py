@@ -123,20 +123,26 @@ while cap.isOpened():
     results = face_mesh.process(rgb_frame)
 
     if results.multi_face_landmarks:
+        # convert face points to frame points
         mesh_coordinates = landmarksDetection(frame, results, True)
 
+        # calculate the eye ratio between vertical distance and horizontal distance
         eyes_ratio = blinkRatio(mesh_coordinates, RIGHT_EYE, LEFT_EYE)
 
+        # calculate horizontal and vertical distance
         mouth_ratio = mouthRatio(mesh_coordinates, MOUTH)
         mouth_variance = varianceCalculate(mouth_ratio_old, mouth_ratio)
         if mouth_ratio is not None:
             mouth_ratio_old = mouth_ratio.copy()
 
+
+        # calculate position of the center of the face on the frame and variance
         face_center = faceCenter(mesh_coordinates, FACE_CENTER)
         face_center_variance = varianceCalculate(face_center_old, face_center)
         if face_center is not None:
             face_center_old = face_center.copy()
 
+        # calculate the angle of the center of the face on the frame and variance
         face_angle = faceAngle(mesh_coordinates, FACE_CENTER)
         face_angle_variance = varianceCalculate(face_angle_old, face_angle)
         if face_angle is not None:
@@ -176,6 +182,7 @@ while cap.isOpened():
             y = int(results.multi_face_landmarks[0].landmark[idx].y * h)
             cv2.circle(frame, (x, y), 3, (255, 255, 0), -1)  # Yellow dots on mouth
 
+    # press q while on the camera tab to quit
     cv2.imshow("Iris Detection", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break

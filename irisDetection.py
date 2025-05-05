@@ -2,6 +2,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import math
+import time
 
 TOTAL_BLINKS = 0
 COUNTER = 0
@@ -111,6 +112,10 @@ mouth_ratio_old = None
 face_center_old = None
 face_angle_old = None
 
+start_time = time.time()
+interval = 3  
+data_list = []  
+
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
@@ -142,6 +147,12 @@ while cap.isOpened():
         if face_angle is not None:
             face_angle_old = face_angle
 
+        elapsed_time = time.time() - start_time
+        if elapsed_time >= interval:
+            avg_blink_freq = TOTAL_BLINKS / elapsed_time
+            data_list.append([avg_blink_freq, mouth_variance, face_center_variance, face_angle_variance])
+            start_time = time.time()
+            TOTAL_BLINKS = 0
         h, w, _ = frame.shape
 
         if eyes_ratio > 4.5:
@@ -178,6 +189,9 @@ while cap.isOpened():
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
+with open("output_features.txt", "w") as f:
+    for data in data_list:
+        f.write(",".join([str(d) for d in data]) + "\n")
 
 cap.release()
 cv2.destroyAllWindows()

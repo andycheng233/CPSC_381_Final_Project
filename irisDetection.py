@@ -112,6 +112,10 @@ mouth_ratio_old = None
 face_center_old = None
 face_angle_old = None
 
+total_mouth_variance = 0
+total_face_center_variance = 0
+total_face_angle_variance = 0
+
 start_time = time.time()
 interval = 3  
 data_list = []  
@@ -127,7 +131,13 @@ while cap.isOpened():
 
     results = face_mesh.process(rgb_frame)
 
+    print(results)
+    
     if results.multi_face_landmarks:
+        print("ARE WE IN?????")
+        for i, face_landmarks in enumerate(results.multi_face_landmarks):
+            num_landmarks = len(face_landmarks.landmark)
+            print(num_landmarks)
         # convert face points to frame points
         mesh_coordinates = landmarksDetection(frame, results, True)
 
@@ -137,6 +147,7 @@ while cap.isOpened():
         # calculate horizontal and vertical distance
         mouth_ratio = mouthRatio(mesh_coordinates, MOUTH)
         mouth_variance = varianceCalculate(mouth_ratio_old, mouth_ratio)
+        total_mouth_variance += mouth_variance
         if mouth_ratio is not None:
             mouth_ratio_old = mouth_ratio.copy()
 
@@ -144,21 +155,32 @@ while cap.isOpened():
         # calculate position of the center of the face on the frame and variance
         face_center = faceCenter(mesh_coordinates, FACE_CENTER)
         face_center_variance = varianceCalculate(face_center_old, face_center)
+        total_face_center_variance += face_center_variance
         if face_center is not None:
             face_center_old = face_center.copy()
 
         # calculate the angle of the center of the face on the frame and variance
         face_angle = faceAngle(mesh_coordinates, FACE_CENTER)
         face_angle_variance = varianceCalculate(face_angle_old, face_angle)
+        total_face_angle_variance += face_angle_variance
         if face_angle is not None:
             face_angle_old = face_angle
 
+
+        # true --> telling truth, false --> telling lies
         elapsed_time = time.time() - start_time
         if elapsed_time >= interval:
             avg_blink_freq = TOTAL_BLINKS / elapsed_time
-            data_list.append([avg_blink_freq, mouth_variance, face_center_variance, face_angle_variance])
+            avg_mouth_variance = total_mouth_variance / elapsed_time
+            avg_face_center_variance = total_face_center_variance / elapsed_time
+            avg_face_angle_variance = total_face_angle_variance / elapsed_time
+            data_list.append([[avg_blink_freq, avg_mouth_variance, avg_face_center_variance, avg_face_angle_variance], False])
+
             start_time = time.time()
             TOTAL_BLINKS = 0
+            total_mouth_variance = 0
+            total_face_center_variance = 0
+            total_face_angle_variance = 0
         h, w, _ = frame.shape
 
         # processing blinks - one count per full blink
@@ -198,7 +220,7 @@ while cap.isOpened():
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-with open("output_features.txt", "w") as f:
+with open("output_features.txt", "a") as f:
     for data in data_list:
         f.write(",".join([str(d) for d in data]) + "\n")
 

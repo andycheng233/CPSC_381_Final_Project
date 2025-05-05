@@ -128,20 +128,26 @@ while cap.isOpened():
     results = face_mesh.process(rgb_frame)
 
     if results.multi_face_landmarks:
+        # convert face points to frame points
         mesh_coordinates = landmarksDetection(frame, results, True)
 
+        # calculate the eye ratio between vertical distance and horizontal distance
         eyes_ratio = blinkRatio(mesh_coordinates, RIGHT_EYE, LEFT_EYE)
 
+        # calculate horizontal and vertical distance
         mouth_ratio = mouthRatio(mesh_coordinates, MOUTH)
         mouth_variance = varianceCalculate(mouth_ratio_old, mouth_ratio)
         if mouth_ratio is not None:
             mouth_ratio_old = mouth_ratio.copy()
 
+
+        # calculate position of the center of the face on the frame and variance
         face_center = faceCenter(mesh_coordinates, FACE_CENTER)
         face_center_variance = varianceCalculate(face_center_old, face_center)
         if face_center is not None:
             face_center_old = face_center.copy()
 
+        # calculate the angle of the center of the face on the frame and variance
         face_angle = faceAngle(mesh_coordinates, FACE_CENTER)
         face_angle_variance = varianceCalculate(face_angle_old, face_angle)
         if face_angle is not None:
@@ -155,6 +161,7 @@ while cap.isOpened():
             TOTAL_BLINKS = 0
         h, w, _ = frame.shape
 
+        # processing blinks - one count per full blink
         if eyes_ratio > 4.5:
             if BLINK_PROCESSED == False:
                 TOTAL_BLINKS += 1
@@ -166,6 +173,7 @@ while cap.isOpened():
                 TOTAL_BLINKS += 1
                 COUNTER = 0
 
+        # show all feature quantities on the frame
         cv2.rectangle(frame, (20, 100), (500, 420), (0,0,0), -1)
         cv2.putText(frame, f'Total Blinks: {TOTAL_BLINKS}',(30, 150), FONT, 1, (0, 255, 0), 3)
         cv2.putText(frame, f'Mouth Ratio: {mouth_ratio[0]}x, {mouth_ratio[1]}y', (30,200), FONT, 1, (0,255,0), 3)   
@@ -174,7 +182,7 @@ while cap.isOpened():
         cv2.putText(frame, f'Face Center Variance: {face_center_variance}', (30,350), FONT, 1, (0,255,0), 3)   
         cv2.putText(frame, f'Face Angle Variance: {face_angle_variance}', (30,400), FONT, 1, (0,255,0), 3)   
 
-
+        # display feature points on the frame 
         for idx in MOUTH:
             x = int(results.multi_face_landmarks[0].landmark[idx].x * w)
             y = int(results.multi_face_landmarks[0].landmark[idx].y * h)
@@ -185,6 +193,7 @@ while cap.isOpened():
             y = int(results.multi_face_landmarks[0].landmark[idx].y * h)
             cv2.circle(frame, (x, y), 3, (255, 255, 0), -1)  # Yellow dots on mouth
 
+    # press q while on the camera tab to quit
     cv2.imshow("Iris Detection", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
@@ -192,6 +201,7 @@ while cap.isOpened():
 with open("output_features.txt", "w") as f:
     for data in data_list:
         f.write(",".join([str(d) for d in data]) + "\n")
+
 
 cap.release()
 cv2.destroyAllWindows()
